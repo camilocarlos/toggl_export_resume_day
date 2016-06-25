@@ -3,7 +3,7 @@
 from flask import Flask
 from flask import jsonify
 from flask import request
-from toggl_consume import get_toggl_time_entries
+from toggl_consumer import get_toggl_time_entries
 
 app = Flask(__name__)
 
