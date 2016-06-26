@@ -14,6 +14,7 @@ import codecs
 import json
 
 TIME_FORMAT = 'HH:mm'
+DATE_FORMAT = 'DD/MM/YYYY'
 DATETIME_FORMAT = 'DD/MM/YYYY HH:mm'
 
 class TimeEntry(object):
@@ -39,11 +40,11 @@ class ResumeDay(object):
     def __str__(self):
         interval_time_str = seconds_to_time(self.interval).format("HH:mm")
         total_time_str = seconds_to_time(self.calculate_total_time()).format("HH:mm")
-        return str(self.entries[0]) + " " + str(self.entries[1]) + " " + interval_time_str + " " + total_time_str
+        return self.date.format(DATE_FORMAT) + " " + str(self.entries[0]) + " " + str(self.entries[1]) + " " + interval_time_str + " " + total_time_str
 
     def as_dict(self):
         dict = {}
-        dict['date'] = self.date.isoformat()
+        dict['date'] = self.date.format(DATE_FORMAT)
         dict['entries'] = []
         if self.entries is not None:
             dict['entries'] = [str(self.entries[0]), str(self.entries[1])]
@@ -144,7 +145,7 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
         t1 = TimeEntry(start1, maxInterval.start)
         t2 = TimeEntry(maxInterval.stop, stop1)
         resume_entries = [t1, t2]
-        resume = ResumeDay(start1.date(),resume_entries, interval = (interval_sum.seconds - maxInterval.duration))
+        resume = ResumeDay(start1,resume_entries, interval = (interval_sum.seconds - maxInterval.duration))
         print resume
         result.append(resume.as_dict())
 
