@@ -3,7 +3,7 @@
 from flask import Flask
 from flask import jsonify
 from flask import request
-from flask.ext.cors import CORS
+from flask_cors import CORS
 from toggl_consumer import get_toggl_time_entries
 
 app = Flask(__name__)
