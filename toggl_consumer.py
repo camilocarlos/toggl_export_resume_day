@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import arrow
+import ast
+from collections import OrderedDict
 import requests
 from sys import argv
 from datetime import datetime
@@ -9,6 +11,7 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 import base64
 import codecs
+import json
 
 TIME_FORMAT = 'HH:mm'
 DATETIME_FORMAT = 'DD/MM/YYYY HH:mm'
@@ -36,9 +39,18 @@ class ResumeDay(object):
     def __str__(self):
         interval_time_str = seconds_to_time(self.interval).format("HH:mm")
         total_time_str = seconds_to_time(self.calculate_total_time()).format("HH:mm")
-        #interval_time_str = interval_time.format("HH:mm") if interval_time is not None else ""
-        #total_time_str = total_time.format("HH:mm") if total_time is not None else ""
-        return self.date.isoformat() + " " + str(self.entries[0]) + " " + str(self.entries[1]) + " " + interval_time_str + " " + total_time_str
+        return str(self.entries[0]) + " " + str(self.entries[1]) + " " + interval_time_str + " " + total_time_str
+
+    def as_dict(self):
+        dict = {}
+        dict['date'] = self.date.isoformat()
+        dict['entries'] = []
+        if self.entries is not None:
+            dict['entries'] = [str(self.entries[0]), str(self.entries[1])]
+        dict['interval'] = seconds_to_time(self.interval).format("HH:mm")
+        dict['total_time'] = seconds_to_time(self.calculate_total_time()).format("HH:mm")
+        #return json.dumps(dict, ensure_ascii=False)
+        return dict
 
     def calculate_total_time(self):
         total_time = timedelta()
@@ -71,7 +83,6 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
         return
 
     toggl_url 	 = "https://www.toggl.com/api/v8/time_entries"
-    #user_token 	 = "cc404a890954ed1fbf22b1896b82daa2"
     api_token	 = user_token + ":api_token"
     headers		 = {'Authorization':'Basic '+ base64.b64encode(api_token)}
     params		 = {
@@ -86,24 +97,24 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
         print response
         return
     data = response.json()
-    time_dict = {}
+    time_dict_tmp = {}
     for entry in data:
-        #start = datetime.strptime(entry['start'], "%Y-%m-%dT%H:%M:%S+00:00")
         start = arrow.get(entry['start']).to("-03:00")
         stop = arrow.get(entry['stop']).to("-03:00")
         duration = entry['duration']
         date = start.date()
-        tmp = TimeEntry(start, stop, duration)
-        if time_dict.has_key(date):
-            time_dict[date].append(tmp)
-        else:
-            time_dict[date] = [tmp]
-
-    #print time_dict
+        if date >= startdate.date():
+            tmp = TimeEntry(start, stop, duration)
+            if time_dict_tmp.has_key(date):
+                time_dict_tmp[date].append(tmp)
+            else:
+                time_dict_tmp[date] = [tmp]
 
     print "Resultado"
-    for key in time_dict.iterkeys():
-        entries = time_dict[key]
+    result = []
+    time_dict = OrderedDict(sorted(time_dict_tmp.items(), key=lambda t: t[0]))
+    for key, value in time_dict.items():
+        entries = value
         start1 = arrow.get('2100-01-01T00:00:00+00:00')
         stop1 = arrow.get('2000-01-01T00:00:00+00:00')
         last_stop = None
@@ -119,8 +130,8 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
                 stop1 = e.stop
 
             if last_stop is not None:
-                #TODO : Não levar em considerações os segundos
                 interval = e.start - last_stop
+                # Tratamento para quando houver interseção de horário
                 if interval.seconds > 80000:
                     interval = timedelta()
                 if interval.seconds  >= maxInterval.duration:
@@ -135,5 +146,10 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
         resume_entries = [t1, t2]
         resume = ResumeDay(start1.date(),resume_entries, interval = (interval_sum.seconds - maxInterval.duration))
         print resume
-        #print start1.format("HH:mm") + " " + maxInterval.start.format("HH:mm") + " " + maxInterval.stop.format("HH:mm") + " "+ stop1.format("HH:mm") + " " + str(interval_sum.seconds - maxInterval.duration)
+        result.append(resume.as_dict())
 
+    def obj_default(obj):
+        return obj
+
+    result_str = json.dumps(result, default=obj_default)
+    return ast.literal_eval(result_str)
