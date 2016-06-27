@@ -30,17 +30,18 @@ class TimeEntry(object):
             return ""
 
 class ResumeDay(object):
-    def __init__(self, date, entries, sum_time=0, interval=0):
+    def __init__(self, date, entries, aditional_time=0, interval=0):
         self.date = date
         self.entries = entries
-        self.sum_time = sum_time
+        self.aditional_time = aditional_time
         self.interval = interval
         self.total_time = 0
 
     def __str__(self):
         interval_time_str = seconds_to_time(self.interval).format("HH:mm")
+        aditional_time_str = seconds_to_time(self.aditional_time).format("HH:mm")
         total_time_str = seconds_to_time(self.calculate_total_time()).format("HH:mm")
-        return self.date.format(DATE_FORMAT) + " " + str(self.entries[0]) + " " + str(self.entries[1]) + " " + interval_time_str + " " + total_time_str
+        return self.date.format(DATE_FORMAT) + " " + str(self.entries[0]) + " " + str(self.entries[1]) + " " + aditional_time_str + " " + interval_time_str + " " + total_time_str
 
     def as_dict(self):
         dict = {}
@@ -58,6 +59,7 @@ class ResumeDay(object):
             d['stop'] = self.entries[1].stop.format("HH:mm")
             dict['entries'].append(d)
         dict['interval'] = seconds_to_time(self.interval).format("HH:mm")
+        dict['aditional_time'] = seconds_to_time(self.aditional_time).format("HH:mm")
         dict['total_time'] = seconds_to_time(self.calculate_total_time()).format("HH:mm")
         #return json.dumps(dict, ensure_ascii=False)
         return dict
@@ -66,7 +68,7 @@ class ResumeDay(object):
         total_time = timedelta()
         for e in self.entries:
             total_time += e.stop - e.start
-        return total_time.seconds - self.interval
+        return total_time.seconds - self.interval + self.aditional_time
 
 def seconds_to_time(seconds_time):
     hour = seconds_time // 3600
@@ -153,8 +155,18 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
 
         t1 = TimeEntry(start1, maxInterval.start)
         t2 = TimeEntry(maxInterval.stop, stop1)
+        meia_noite = arrow.get(t2.stop.date().isoformat() + " 00:00-03:00")
+        aditional_time = timedelta()
+        print t2.stop
+        print meia_noite
+        if (meia_noite - t2.stop).seconds > 70000:
+            aditional_time = t2.stop - meia_noite
+            t2.stop = meia_noite
+            print aditional_time
+            print aditional_time.seconds
+
         resume_entries = [t1, t2]
-        resume = ResumeDay(start1,resume_entries, interval = (interval_sum.seconds - maxInterval.duration))
+        resume = ResumeDay(start1,resume_entries, aditional_time = aditional_time.seconds, interval = (interval_sum.seconds - maxInterval.duration))
         print resume
         result.append(resume.as_dict())
 
