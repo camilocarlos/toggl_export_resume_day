@@ -47,7 +47,16 @@ class ResumeDay(object):
         dict['date'] = self.date.format(DATE_FORMAT)
         dict['entries'] = []
         if self.entries is not None:
-            dict['entries'] = [str(self.entries[0]), str(self.entries[1])]
+            #dict['entries'] = [str(self.entries[0]), str(self.entries[1])]
+            dict['entries'] = []
+            d = {}
+            d['start'] = self.entries[0].start.format("HH:mm")
+            d['stop'] = self.entries[0].stop.format("HH:mm")
+            dict['entries'].append(d)
+            d = {}
+            d['start'] = self.entries[1].start.format("HH:mm")
+            d['stop'] = self.entries[1].stop.format("HH:mm")
+            dict['entries'].append(d)
         dict['interval'] = seconds_to_time(self.interval).format("HH:mm")
         dict['total_time'] = seconds_to_time(self.calculate_total_time()).format("HH:mm")
         #return json.dumps(dict, ensure_ascii=False)
