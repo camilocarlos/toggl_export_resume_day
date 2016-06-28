@@ -131,6 +131,14 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
 
     print "Resultado"
     result = []
+
+    # Preenchimento dos dias que não houve registros
+    diff_date = enddate - startdate
+    for i in range(diff_date.days + 1):
+        tmp_key = (startdate + timedelta(days=i)).date()
+        if not time_dict_tmp.has_key(tmp_key):
+            time_dict_tmp[tmp_key] = None
+
     time_dict = OrderedDict(sorted(time_dict_tmp.items(), key=lambda t: t[0]))
     for key, value in time_dict.items():
         entries = value
@@ -140,6 +148,11 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
         interval_sum = timedelta()
         interval = timedelta()
         maxInterval = TimeEntry(None, None, 0)
+
+        if entries is None:
+            resume = ResumeDay(arrow.get(key.isoformat()), [None, None])
+            result.append(resume.as_dict())
+            continue
 
         for e in entries:
             if e.start < start1:
