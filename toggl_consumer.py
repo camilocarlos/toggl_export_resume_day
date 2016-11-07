@@ -118,8 +118,8 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
     data = response.json()
     time_dict_tmp = {}
     for entry in data:
-        start = arrow.get(entry['start']).to("-03:00")
-        stop = arrow.get(entry['stop']).to("-03:00")
+        start = arrow.get(entry['start']).to("-02:00")
+        stop = arrow.get(entry['stop']).to("-02:00")
         duration = entry['duration']
         date = start.date()
         if date >= startdate.date():
