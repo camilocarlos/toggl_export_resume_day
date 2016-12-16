@@ -11,9 +11,9 @@ cors = CORS(app, resources={r"/toggl_api/*": {"origins": "*"}})
 
 @app.route('/toggl_api/api/v1.0/time_entries', methods=['POST'])
 def get_time_entries():
-    api_token =  request.form['api_token']
-    start = request.form['start']
-    stop = request.form['stop']
+    api_token =  request.form.get('api_token')
+    start = request.form.get('start')
+    stop = request.form.get('stop')
     entries = get_toggl_time_entries(api_token, start, stop)
     return jsonify({'data': entries})
 
