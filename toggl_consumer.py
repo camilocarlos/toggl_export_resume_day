@@ -119,7 +119,7 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
     time_dict_tmp = {}
     for entry in data:
         horario_verao = arrow.get('2016-10-16')
-        if arrow.get(entry['start']) <= horario_verao:
+        if arrow.get(entry['start']) < horario_verao:
             start = arrow.get(entry['start']).to("-03:00")
             stop = arrow.get(entry['stop']).to("-03:00")
         else:
@@ -187,7 +187,11 @@ def get_toggl_time_entries(user_token, startdate_str, stopdate_str):
             t1 = TimeEntry(start1, maxInterval.start)
             t2 = TimeEntry(maxInterval.stop, stop1)
             tMax = t2
-        meia_noite = arrow.get(tMax.stop.date().isoformat() + " 00:00-03:00")
+        horario_verao = arrow.get('2016-10-16')
+	if arrow.get(tMax.stop.date()) < horario_verao:
+            meia_noite = arrow.get(tMax.stop.date().isoformat() + " 00:00-03:00")
+        else:
+            meia_noite = arrow.get(tMax.stop.date().isoformat() + " 00:00-02:00")
         aditional_time = timedelta()
         if (meia_noite - tMax.stop).seconds > 70000:
             aditional_time = tMax.stop - meia_noite
